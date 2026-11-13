@@ -1,48 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Web Player</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; }
-    .box { max-width: 600px; margin: auto; background: #181818; padding: 20px; border-radius: 12px; }
-    button { background: #1DB954; color: #000; border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; margin: 4px; }
-    button:hover { background: #1ed760; }
-    input { width: 70%; padding: 10px; border-radius: 20px; border: none; background: #282828; color: #fff; }
-    .track { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #282828; }
-    .now-playing { background: #282828; padding: 15px; border-radius: 8px; margin: 15px 0; text-align: center; }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h2>Personal Music Player</h2>
-    <div id="login-view">
-      <button onclick="login()">Connect Spotify</button>
-    </div>
-
-    <div id="player-view" style="display:none;">
-      <div class="now-playing">
-        <div id="track-info">Ready to play...</div>
-        <div style="margin-top:10px;">
-          <button onclick="player.previousTrack()">Prev</button>
-          <button onclick="player.togglePlay()">Play / Pause</button>
-          <button onclick="player.nextTrack()">Next</button>
-        </div>
-      </div>
-
-      <div>
-        <input type="text" id="search-input" placeholder="Search songs..." />
-        <button onclick="searchSongs()">Search</button>
-      </div>
-      <div id="results" style="margin-top:15px;"></div>
-    </div>
-  </div>
-
   <script src="https://scdn.co"></script>
   <script>
     const clientId = '9fd72aaabb6b4c6eab6d093508f7df39';
-    const redirectUri = window.location.origin + window.location.pathname;
+    const redirectUri = 'https://github.io';
     let token = localStorage.getItem('sp_token');
     let deviceId = '';
     let player;
@@ -54,7 +13,16 @@
       const digest = await crypto.subtle.digest('SHA-256', data);
       const challenge = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       const scopes = 'streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state';
-      window.location = `https://spotify.com{clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&code_challenge_method=S256&code_challenge=${challenge}`;
+      
+      const authUrl = 'https://spotify.com' +
+        '?client_id=' + encodeURIComponent(clientId) +
+        '&response_type=code' +
+        '&redirect_uri=' + encodeURIComponent(redirectUri) +
+        '&scope=' + encodeURIComponent(scopes) +
+        '&code_challenge_method=S256' +
+        '&code_challenge=' + encodeURIComponent(challenge);
+
+      window.location.href = authUrl;
     }
 
     async function handleAuth() {
@@ -64,8 +32,11 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
-            client_id: clientId, grant_type: 'authorization_code', code,
-            redirect_uri: redirectUri, code_verifier: localStorage.getItem('verifier')
+            client_id: clientId,
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: redirectUri,
+            code_verifier: localStorage.getItem('verifier')
           })
         });
         const data = await res.json();
@@ -108,7 +79,7 @@
       data.tracks.items.forEach(t => {
         const div = document.createElement('div');
         div.className = 'track';
-        div.innerHTML = `<span>${t.name} - ${t.artists[0].name}</span><button onclick="playUri('${t.uri}')">Play</button>`;
+        div.innerHTML = `<span>${t.name} - ${t.artists.map(a => a.name).join(', ')}</span><button onclick="playUri('${t.uri}')">Play</button>`;
         box.appendChild(div);
       });
     }
@@ -123,5 +94,3 @@
 
     handleAuth();
   </script>
-</body>
-</html>
